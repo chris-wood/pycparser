@@ -14,6 +14,7 @@
 #-----------------------------------------------------------------
 from __future__ import print_function
 import sys
+import re
 
 # This is not required if you've installed pycparser into
 # your site-packages/ with setup.py
@@ -32,9 +33,10 @@ from pycparser import c_parser, c_ast
 # to, so I've inserted the dummy typedef in the code to let the
 # parser know Hash and Node are types. You don't need to do it
 # when parsing real, correct C code.
-#
-text = r"""
-    typedef int Node, Hash;
+
+# typedef int Node, Hash;
+mytext = r"""
+    
 
     void HashPrint(Hash* hash, void (*PrintFunc)(char*, char*))
     {
@@ -56,10 +58,35 @@ text = r"""
     }
 """
 
+def comment_remover(text):
+    def replacer(match):
+        s = match.group(0)
+        if s.startswith('/'):
+            return " " # note: a space and not an empty string
+        else:
+            return s
+    pattern = re.compile(
+        r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
+        re.DOTALL | re.MULTILINE
+    )
+    return re.sub(pattern, replacer, text)
+
 # Create the parser and ask to parse the text. parse() will throw
 # a ParseError if there's an error in the code
 #
 parser = c_parser.CParser()
+
+fileIn = open(sys.argv[1], "r")
+lines = []
+for line in fileIn.readlines():
+    if not line.startswith("#"):
+        lines.append(line)
+text = comment_remover(''.join(lines))
+# print(text)
+
+text = mytext
+
+print(text)
 ast = parser.parse(text, filename='<none>')
 
 # Uncomment the following line to see the AST in a nice, human
@@ -67,7 +94,7 @@ ast = parser.parse(text, filename='<none>')
 # created by pycparser. See the c_ast.py file for the options you
 # can pass it.
 #
-#~ ast.show()
+ast.show()
 
 # OK, we've seen that the top node is FileAST. This is always the
 # top node of the AST. Its children are "external declarations",
@@ -111,8 +138,8 @@ function_body = ast.ext[2].body
 # The following displays the declarations and statements in the function
 # body
 #
-#~ for decl in function_body.block_items:
-    #~ decl.show()
+for decl in function_body.block_items:
+    decl.show()
 
 # We can see a single variable declaration, i, declared to be a simple type
 # declaration of type 'unsigned int', followed by statements.
