@@ -115,6 +115,7 @@ class NodeVisitor(object):
         """ Visit a node.
         """
         method = 'visit_' + node.__class__.__name__
+        print str(node.__class__.__name__)
         visitor = getattr(self, method, self.generic_visit)
         return visitor(node)
 
